@@ -1,3 +1,5 @@
+console.log("APP JS LOADED");
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,7 +9,7 @@ require('dotenv').config();
 
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
-
+const dashboardRoutes = require('./routes/dashboardRoutes');    
 const app = express();
 
 app.use(helmet());
@@ -39,6 +41,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/loans', require('./routes/loans'));
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } });
@@ -47,3 +50,5 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 module.exports = app;
+
+console.log("Dashboard Routes Loaded");

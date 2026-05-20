@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchEMISchedule, payEMI } from '../../store/slices/loanSlice';
 import Layout from '../../components/Layout';
 import StatusBadge from '../../components/StatusBadge';
+import ApplicationTrackerStepper from '../../components/loans/ApplicationTrackerStepper';
+import QRPaymentModal from '../../components/payments/QRPaymentModal';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -13,14 +15,16 @@ export default function LoanDetailPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { emiSchedule, myLoans, loading } = useSelector(s => s.loans);
+  const [selectedEMI, setSelectedEMI] = useState(null);
   const loan = myLoans.find(l => l.id === loanId);
 
   useEffect(() => { dispatch(fetchEMISchedule(loanId)); }, [loanId, dispatch]);
 
   const handlePayEMI = async (emi) => {
-    const res = await dispatch(payEMI({ loanId, emiNumber: emi.emiNumber, amount: emi.totalAmount, paymentMethod: 'ONLINE' }));
+    setSelectedEMI(null); // Close modal if open
+    const res = await dispatch(payEMI({ loanId, emiNumber: emi.emiNumber, amount: emi.totalAmount, paymentMethod: 'UPI' }));
     if (payEMI.fulfilled.match(res)) {
-      toast.success(`EMI #${emi.emiNumber} paid successfully!`);
+      toast.success(`EMI #${emi.emiNumber} paid successfully via UPI!`);
       dispatch(fetchEMISchedule(loanId));
     } else toast.error(res.payload || 'Payment failed');
   };
@@ -75,6 +79,8 @@ export default function LoanDetailPage() {
         <button className="btn-secondary" onClick={() => navigate('/my-loans')}>← Back</button>
       </div>
 
+      <ApplicationTrackerStepper loanId={loan.id} initialStatus={loan.status} />
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
         {[
           ['Loan Amount', `₹${parseFloat(loan.loanAmount).toLocaleString('en-IN')}`],
@@ -92,7 +98,7 @@ export default function LoanDetailPage() {
       </div>
 
       {/* Progress */}
-      {emiSchedule && (
+      {emiSchedule?.emis?.length > 0 && (
         <div className="glass-card" style={{ padding: '24px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ color: '#F1F5F9', fontWeight: 700 }}>Repayment Progress</h3>
@@ -106,7 +112,7 @@ export default function LoanDetailPage() {
       )}
 
       {/* EMI Schedule */}
-      {emiSchedule?.emis && (
+      {emiSchedule?.emis && emiSchedule.emis.length > 0 ? (
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ color: '#F1F5F9', fontWeight: 700, marginBottom: '20px', fontSize: '16px' }}>📅 EMI Schedule</h3>
           <div style={{ overflowX: 'auto' }}>
@@ -129,7 +135,9 @@ export default function LoanDetailPage() {
                     <td style={{ padding: '12px' }}><StatusBadge status={emi.status} /></td>
                     <td style={{ padding: '12px' }}>
                       {emi.status === 'PENDING' && loan.status === 'ACTIVE' && (
-                        <button className="btn-success" onClick={() => handlePayEMI(emi)} style={{ fontSize: '12px', padding: '6px 12px' }}>Pay</button>
+                        <button className="btn-success" onClick={() => setSelectedEMI(emi)} style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>📱</span> Pay with QR
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -138,6 +146,21 @@ export default function LoanDetailPage() {
             </table>
           </div>
         </div>
+      ) : (
+        <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>📅</div>
+          <h3 style={{ color: '#F1F5F9', fontWeight: 600, fontSize: '16px', marginBottom: '8px' }}>No EMI Schedule Yet</h3>
+          <p style={{ fontSize: '14px' }}>Your official EMI schedule will be generated and displayed here once your loan is approved and disbursed by an administrator.</p>
+        </div>
+      )}
+
+      {selectedEMI && (
+        <QRPaymentModal 
+          loanId={loan.id} 
+          emi={selectedEMI} 
+          onClose={() => setSelectedEMI(null)} 
+          onPaymentComplete={handlePayEMI} 
+        />
       )}
     </Layout>
   );

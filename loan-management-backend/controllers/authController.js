@@ -31,7 +31,7 @@ exports.login = async (req, res, next) => {
       success: true,
       data: {
         accessToken, refreshToken,
-        user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, kycStatus: user.kycStatus },
+        user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, kycStatus: user.kycStatus, creditScore: user.creditScore },
       },
     });
   } catch (err) { next(err); }

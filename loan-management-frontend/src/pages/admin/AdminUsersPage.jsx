@@ -16,7 +16,7 @@ export default function AdminUsersPage() {
   }, [dispatch]);
 
   const filteredUsers = users.filter(u => 
-    [u.firstName, u.lastName, u.email, u.username, u.role].some(f => f?.toLowerCase().includes(search.toLowerCase()))
+    [u.firstName, u.lastName, u.email, u.username, u.role].some(f => (f || '').toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleUpdateRole = async (userId, newRole) => {

@@ -12,6 +12,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLoansPage from './pages/admin/AdminLoansPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 
+
 function ProtectedRoute({ children, roles }) {
   const { isAuthenticated, user } = useSelector(s => s.auth);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -44,9 +45,10 @@ export default function App() {
       {/* Admin / Officers */}
       <Route path="/admin" element={<ProtectedRoute roles={['ADMIN','LOAN_OFFICER','MANAGER']}><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<ProtectedRoute roles={['ADMIN','LOAN_OFFICER','MANAGER']}><AdminLoansPage /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN','LOAN_OFFICER','MANAGER']}><AdminUsersPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
   );
 }

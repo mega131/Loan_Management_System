@@ -19,7 +19,7 @@ export default function CustomerDashboard() {
   const approved = myLoans.filter(l => l.status === 'APPROVED').length;
   const active = myLoans.filter(l => l.status === 'ACTIVE').length;
   const pending = myLoans.filter(l => l.status === 'PENDING').length;
-  const totalAmount = myLoans.reduce((s, l) => s + parseFloat(l.loanAmount || 0), 0);
+  const totalAmount = myLoans.filter(l => ['ACTIVE', 'COMPLETED'].includes(l.status)).reduce((s, l) => s + parseFloat(l.loanAmount || 0), 0);
 
   const pieData = [
     { name: 'Pending', value: pending },
@@ -86,8 +86,36 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Chart */}
-        <div className="glass-card" style={{ padding: '24px' }}>
-          <h3 style={{ fontWeight: 700, color: '#F1F5F9', fontSize: '16px', marginBottom: '20px' }}>📊 Loan Distribution</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Credit Score Widget */}
+          <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
+            <h3 style={{ fontWeight: 700, color: '#F1F5F9', fontSize: '16px', marginBottom: '16px', textAlign: 'left' }}>🎯 Credit Score</h3>
+            {user?.creditScore ? (
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '140px', height: '140px' }}>
+                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%' }}>
+                  <path strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" strokeLinecap="round" />
+                  <path strokeDasharray={`${(user.creditScore / 850) * 100}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={user.creditScore > 700 ? '#10B981' : user.creditScore > 500 ? '#F59E0B' : '#EF4444'} strokeWidth="3" strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease-out' }} />
+                </svg>
+                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '28px', fontWeight: 800, color: '#F1F5F9', lineHeight: 1 }}>{user.creditScore}</span>
+                  <span style={{ fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>Out of 850</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '20px 0', color: '#94A3B8' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+                <p style={{ fontSize: '13px' }}>Complete KYC to unlock</p>
+              </div>
+            )}
+            {user?.creditScore && (
+              <p style={{ marginTop: '16px', fontSize: '13px', color: user.creditScore > 700 ? '#10B981' : user.creditScore > 500 ? '#F59E0B' : '#EF4444', fontWeight: 600 }}>
+                {user.creditScore > 700 ? 'Excellent! High approval chances.' : user.creditScore > 500 ? 'Fair score. Interest rates may vary.' : 'Poor score. Loan approval unlikely.'}
+              </p>
+            )}
+          </div>
+
+          <div className="glass-card" style={{ padding: '24px' }}>
+            <h3 style={{ fontWeight: 700, color: '#F1F5F9', fontSize: '16px', marginBottom: '20px' }}>📊 Loan Distribution</h3>
           {pieData.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={200}>
@@ -111,6 +139,7 @@ export default function CustomerDashboard() {
           ) : (
             <div style={{ textAlign: 'center', color: '#475569', padding: '40px 0' }}>No data yet</div>
           )}
+          </div>
         </div>
       </div>
 

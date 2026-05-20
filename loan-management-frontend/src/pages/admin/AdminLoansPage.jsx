@@ -20,7 +20,7 @@ export default function AdminLoansPage() {
 
   const filtered = allLoans.filter(l => {
     const matchesFilter = filter === 'ALL' || l.status === filter;
-    const matchesSearch = !search || [l.borrower?.firstName, l.borrower?.lastName, l.borrower?.email, l.loanType, l.purpose].some(f => f?.toLowerCase().includes(search.toLowerCase()));
+    const matchesSearch = !search || [l.borrower?.firstName, l.borrower?.lastName, l.borrower?.email, l.loanType, l.purpose].some(f => (f || '').toLowerCase().includes(search.toLowerCase()));
     return matchesFilter && matchesSearch;
   });
 
@@ -60,6 +60,10 @@ export default function AdminLoansPage() {
             }}>{s} {s !== 'ALL' && `(${allLoans.filter(l => l.status === s).length})`}</button>
           ))}
         </div>
+      </div>
+
+      <div style={{ marginBottom: '16px', color: '#64748B', fontSize: '12px' }}>
+        DEBUG INFO: allLoans length is {allLoans.length}, filtered length is {filtered.length}, loading is {loading ? 'true' : 'false'}, error is {useSelector(s => s.loans.error) || 'none'}
       </div>
 
       {loading ? (

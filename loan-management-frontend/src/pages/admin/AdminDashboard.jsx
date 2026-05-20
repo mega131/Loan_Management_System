@@ -5,12 +5,14 @@ import { fetchPortfolio, fetchAllLoans } from '../../store/slices/loanSlice';
 import Layout from '../../components/Layout';
 import StatsCard from '../../components/StatsCard';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import RevenueChart from '../../components/charts/RevenueChart';
 
 const COLORS = ['#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B'];
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
   const { portfolio, allLoans, loading } = useSelector(s => s.loans);
+  const { user } = useSelector(s => s.auth);
 
   useEffect(() => {
     dispatch(fetchPortfolio());
@@ -35,8 +37,10 @@ export default function AdminDashboard() {
 
   const recentPending = allLoans.filter(l => l.status === 'PENDING').slice(0, 5);
 
+  const roleName = user?.role === 'ADMIN' ? 'System Admin' : user?.role === 'LOAN_OFFICER' ? 'Loan Officer' : 'Manager';
+
   return (
-    <Layout title="Admin Dashboard" subtitle="System overview and analytics">
+    <Layout title={`${roleName} Dashboard`} subtitle="System overview and analytics">
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '16px', marginBottom: '32px' }}>
         <StatsCard title="Total Loans" value={portfolio?.total || 0} icon="📋" color="#3B82F6" />
@@ -47,27 +51,10 @@ export default function AdminDashboard() {
         <StatsCard title="Approval Rate" value={`${portfolio?.approvalRate || 0}%`} icon="📈" color="#10B981" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        {/* Monthly applications bar chart */}
-        <div className="glass-card" style={{ padding: '24px' }}>
-          <h3 style={{ color: '#F1F5F9', fontWeight: 700, fontSize: '15px', marginBottom: '20px' }}>📊 Monthly Applications</h3>
-          {monthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={monthlyData}>
-                <XAxis dataKey="month" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#F1F5F9' }} cursor={{ fill: 'rgba(59,130,246,0.05)' }} />
-                <Bar dataKey="count" fill="url(#barGrad)" radius={[4, 4, 0, 0]} />
-                <defs>
-                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#8B5CF6" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <div style={{ textAlign: 'center', color: '#475569', padding: '60px 0' }}>No data yet</div>}
-        </div>
+      {/* Revenue and Loan Trends Charts */}
+      <RevenueChart />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '24px' }}>
 
         {/* Pie chart */}
         <div className="glass-card" style={{ padding: '24px' }}>

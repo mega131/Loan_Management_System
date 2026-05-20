@@ -41,6 +41,7 @@ const User = sequelize.define('User', {
     try { return JSON.parse(this.getDataValue('address')); } catch { return {}; }
   }, set(val) { this.setDataValue('address', JSON.stringify(val)); } },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+  creditScore: { type: DataTypes.INTEGER, defaultValue: null },
   lastLogin: { type: DataTypes.DATE },
   loginAttempts: { type: DataTypes.INTEGER, defaultValue: 0 },
   lockUntil: { type: DataTypes.DATE },

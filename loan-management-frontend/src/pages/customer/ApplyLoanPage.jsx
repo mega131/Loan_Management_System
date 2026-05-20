@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { applyForLoan } from '../../store/slices/loanSlice';
+import api from '../../services/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,8 @@ export default function ApplyLoanPage() {
   const { loading } = useSelector(s => s.loans);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ loanType: 'PERSONAL', loanAmount: '', tenure: '12', purpose: '', monthlyIncome: '', employmentStatus: 'EMPLOYED' });
+  const [prediction, setPrediction] = useState(null);
+  const [predicting, setPredicting] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const rate = defaultRates[form.loanType];
@@ -38,6 +41,25 @@ export default function ApplyLoanPage() {
       navigate('/my-loans');
     } else {
       toast.error(res.payload || 'Failed to submit');
+    }
+  };
+
+  const handlePredict = async () => {
+    if (!form.loanAmount || form.monthlyIncome === '') {
+      toast.error('Loan amount and monthly income are required');
+      return;
+    }
+    setPredicting(true);
+    try {
+      const res = await api.post('/loans/predict', {
+        loanAmount: +form.loanAmount,
+        monthlyIncome: +form.monthlyIncome
+      });
+      setPrediction(res.data.data);
+    } catch (err) {
+      toast.error('Prediction failed');
+    } finally {
+      setPredicting(false);
     }
   };
 
@@ -138,10 +160,26 @@ export default function ApplyLoanPage() {
               <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '14px', marginBottom: '24px', fontSize: '13px', color: '#94A3B8' }}>
                 ℹ️ By submitting this application, you consent to a credit check and agree to our terms of service.
               </div>
+
+              {prediction && (
+                <div style={{ background: prediction.riskLevel === 'LOW' ? 'rgba(16, 185, 129, 0.1)' : prediction.riskLevel === 'MEDIUM' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${prediction.riskLevel === 'LOW' ? 'rgba(16, 185, 129, 0.3)' : prediction.riskLevel === 'MEDIUM' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`, borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                  <h4 style={{ color: '#F1F5F9', fontWeight: 700, marginBottom: '8px' }}>🤖 AI Approval Prediction</h4>
+                  <p style={{ color: prediction.riskLevel === 'LOW' ? '#10B981' : prediction.riskLevel === 'MEDIUM' ? '#F59E0B' : '#EF4444', fontWeight: 600, fontSize: '16px' }}>
+                    Approval Probability: {prediction.probability}% ({prediction.riskLevel} RISK)
+                  </p>
+                  <ul style={{ color: '#94A3B8', fontSize: '13px', marginTop: '12px', paddingLeft: '20px' }}>
+                    {prediction.suggestions.map((s, i) => <li key={i} style={{ marginBottom: '6px' }}>{s}</li>)}
+                  </ul>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button className="btn-secondary" onClick={() => setStep(2)} style={{ flex: 1 }}>← Back</button>
-                <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ flex: 2, justifyContent: 'center' }}>
-                  {loading ? '⏳ Submitting...' : '🚀 Submit Application'}
+                <button className="btn-secondary" onClick={handlePredict} disabled={predicting} style={{ flex: 1, background: 'linear-gradient(135deg,rgba(167,139,250,0.1),rgba(96,165,250,0.1))', borderColor: 'rgba(167,139,250,0.3)' }}>
+                  {predicting ? '⏳ Analyzing...' : '🤖 Predict Approval'}
+                </button>
+                <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ flex: 1, justifyContent: 'center' }}>
+                  {loading ? '⏳ Submitting...' : '🚀 Submit'}
                 </button>
               </div>
             </div>

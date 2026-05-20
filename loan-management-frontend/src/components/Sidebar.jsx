@@ -12,7 +12,7 @@ const customerNav = [
 ];
 
 const adminNav = [
-  { to: '/admin', icon: '📊', label: 'Dashboard' },
+  { to: '/admin', icon: '📊', label: 'System Dashboard' },
   { to: '/admin/loans', icon: '📋', label: 'Loan Reviews' },
   { to: '/admin/users', icon: '👥', label: 'Users' },
   { to: '/emi-calculator', icon: '🧮', label: 'EMI Calculator' },

@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const app = require('./app');
 const { connectDatabase } = require('./config/database');
@@ -5,6 +6,9 @@ const { initializeRedis } = require('./config/redis');
 const { User } = require('./models');
 const logger = require('./utils/logger');
 const bcrypt = require('bcryptjs');
+const dashboardRoutes = require("./routes/dashboardRoutes");
+
+app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 
