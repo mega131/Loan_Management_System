@@ -103,9 +103,14 @@ class LoanService {
     const rejected = await Loan.count({ where: { status: 'REJECTED' } });
     const defaulted = await Loan.count({ where: { status: 'DEFAULT' } });
     const pending = await Loan.count({ where: { status: 'PENDING' } });
-    const { sequelize } = require('../config/database');
-    const [disbursed] = await sequelize.query('SELECT SUM(disbursedAmount) as total FROM Loans WHERE status IN ("ACTIVE","COMPLETED") AND deletedAt IS NULL');
-    return { total, approved, active, completed, rejected, defaulted, pending, totalDisbursed: disbursed[0]?.total || 0, approvalRate: total ? ((approved + active + completed) / total * 100).toFixed(1) : 0 };
+    const totalDisbursed = await Loan.sum('disbursedAmount', {
+      where: {
+        status: {
+          [Op.in]: ['ACTIVE', 'COMPLETED']
+        }
+      }
+    });
+    return { total, approved, active, completed, rejected, defaulted, pending, totalDisbursed: totalDisbursed || 0, approvalRate: total ? ((approved + active + completed) / total * 100).toFixed(1) : 0 };
   }
 }
 
