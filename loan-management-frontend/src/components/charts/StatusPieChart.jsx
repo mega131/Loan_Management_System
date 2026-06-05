@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 import {
   PieChart,
@@ -20,8 +20,8 @@ const StatusPieChart = () => {
     const fetchStatus = async () => {
       try {
 
-        const res = await axios.get(
-          "http://localhost:5001/api/dashboard/status-distribution"
+        const res = await api.get(
+          "/dashboard/status-distribution"
         );
 
         setData(res.data);

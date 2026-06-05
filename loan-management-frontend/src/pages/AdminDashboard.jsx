@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 import LoanTrendChart from "../components/charts/LoanTrendChart";
 import RevenueChart from "../components/charts/RevenueChart";
@@ -20,8 +20,8 @@ const AdminDashboard = () => {
     const fetchStats = async () => {
       try {
 
-        const res = await axios.get(
-          "http://localhost:5001/api/dashboard/stats"
+        const res = await api.get(
+          "/dashboard/stats"
         );
 
         setStats(res.data);

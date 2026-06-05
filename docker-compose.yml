@@ -22,6 +22,51 @@ services:
     volumes:
       - redis_data:/data
 
+  backend:
+    build:
+      context: ./loan-management-backend
+      dockerfile: Dockerfile
+    container_name: lms-backend
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - API_BASE_URL=http://localhost:5001
+      - FRONTEND_URL=http://localhost:3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=loan_management_db
+      - DB_USER=postgres
+      - DB_PASSWORD=your_password
+      - DB_DIALECT=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_ACCESS_SECRET=super_secret_access_key_min_32_chars_12345
+      - JWT_REFRESH_SECRET=super_secret_refresh_key_min_32_chars_67890
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=your_email@gmail.com
+      - SMTP_PASSWORD=your_app_password
+      - SENDER_EMAIL=noreply@loanapp.com
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build:
+      context: ./loan-management-frontend
+      dockerfile: Dockerfile
+    container_name: lms-frontend
+    restart: always
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:

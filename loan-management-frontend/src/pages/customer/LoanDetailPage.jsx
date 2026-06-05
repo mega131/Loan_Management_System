@@ -10,6 +10,51 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const getInterestRate = (loanType) => {
+  const rates = { PERSONAL: 12, BUSINESS: 14, HOME: 8.5, AUTO: 10, EDUCATION: 9 };
+  return rates[loanType] || 12;
+};
+
+const getTentativeEMIs = (loan) => {
+  if (!loan) return [];
+  const principal = parseFloat(loan.loanAmount);
+  const annualRate = parseFloat(loan.interestRate || getInterestRate(loan.loanType));
+  const tenure = parseInt(loan.tenure);
+
+  const r = annualRate / 12 / 100;
+  let emi = 0;
+  if (r === 0) {
+    emi = principal / tenure;
+  } else {
+    emi = (principal * r * Math.pow(1 + r, tenure)) / (Math.pow(1 + r, tenure) - 1);
+  }
+  emi = Math.round(emi * 100) / 100;
+
+  let balance = principal;
+  const emis = [];
+  let startDate = loan.disbursalDate ? new Date(loan.disbursalDate) : new Date();
+
+  for (let i = 1; i <= tenure; i++) {
+    const interestAmount = Math.round(balance * r * 100) / 100;
+    const principalAmount = Math.round((emi - interestAmount) * 100) / 100;
+    balance = Math.round((balance - principalAmount) * 100) / 100;
+
+    const dueDate = new Date(startDate);
+    dueDate.setMonth(dueDate.getMonth() + i);
+
+    emis.push({
+      id: `tentative-${i}`,
+      emiNumber: i,
+      dueDate: dueDate.toISOString(),
+      principalAmount,
+      interestAmount,
+      totalAmount: emi,
+      status: 'TENTATIVE',
+    });
+  }
+  return emis;
+};
+
 export default function LoanDetailPage() {
   const { loanId } = useParams();
   const dispatch = useDispatch();
@@ -19,6 +64,10 @@ export default function LoanDetailPage() {
   const loan = myLoans.find(l => l.id === loanId);
 
   useEffect(() => { dispatch(fetchEMISchedule(loanId)); }, [loanId, dispatch]);
+
+  const officialEMIs = emiSchedule?.emis && emiSchedule.emis.length > 0;
+  const isTentative = !officialEMIs && loan && (loan.status === 'PENDING' || loan.status === 'APPROVED');
+  const emisToDisplay = officialEMIs ? emiSchedule.emis : (isTentative ? getTentativeEMIs(loan) : []);
 
   const handlePayEMI = async (emi) => {
     setSelectedEMI(null); // Close modal if open
@@ -39,18 +88,38 @@ export default function LoanDetailPage() {
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);
     doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 30);
+
+    const totalPaidAmount = emiSchedule?.emis
+      ?.filter(e => e.status === 'PAID')
+      .reduce((sum, e) => sum + parseFloat(e.paidAmount || e.totalAmount || 0), 0) || 0;
+
     if (loan) {
       doc.setTextColor(241, 245, 249);
       doc.setFontSize(12);
       doc.text(`Loan Type: ${loan.loanType}`, 14, 45);
-      doc.text(`Amount: ₹${parseFloat(loan.loanAmount).toLocaleString('en-IN')}`, 14, 55);
+      doc.text(`Amount: Rs. ${parseFloat(loan.loanAmount).toLocaleString('en-IN')}`, 14, 55);
       doc.text(`Status: ${loan.status}`, 14, 65);
+      doc.text(`Total Paid: Rs. ${totalPaidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, 75);
     }
-    if (emiSchedule?.emis) {
+    
+    if (isTentative && loan) {
+      doc.setFontSize(10);
+      doc.setTextColor(245, 158, 11);
+      doc.text('* Tentative Schedule (Official schedule generated upon disbursal)', 14, 83);
+    }
+
+    if (emisToDisplay.length > 0) {
       autoTable(doc, {
-        startY: 80,
+        startY: isTentative ? 88 : 82,
         head: [['EMI #', 'Due Date', 'Principal', 'Interest', 'Total', 'Status']],
-        body: emiSchedule.emis.map(e => [e.emiNumber, new Date(e.dueDate).toLocaleDateString('en-IN'), `₹${parseFloat(e.principalAmount).toFixed(2)}`, `₹${parseFloat(e.interestAmount).toFixed(2)}`, `₹${parseFloat(e.totalAmount).toFixed(2)}`, e.status]),
+        body: emisToDisplay.map(e => [
+          e.emiNumber, 
+          new Date(e.dueDate).toLocaleDateString('en-IN'), 
+          `Rs. ${parseFloat(e.principalAmount).toFixed(2)}`, 
+          `Rs. ${parseFloat(e.interestAmount).toFixed(2)}`, 
+          `Rs. ${parseFloat(e.totalAmount).toFixed(2)}`, 
+          e.status
+        ]),
         styles: { fillColor: [30, 41, 59], textColor: [241, 245, 249], fontSize: 9 },
         headStyles: { fillColor: [59, 130, 246] },
         alternateRowStyles: { fillColor: [15, 23, 42] },
@@ -112,9 +181,14 @@ export default function LoanDetailPage() {
       )}
 
       {/* EMI Schedule */}
-      {emiSchedule?.emis && emiSchedule.emis.length > 0 ? (
+      {emisToDisplay.length > 0 ? (
         <div className="glass-card" style={{ padding: '24px' }}>
-          <h3 style={{ color: '#F1F5F9', fontWeight: 700, marginBottom: '20px', fontSize: '16px' }}>📅 EMI Schedule</h3>
+          {isTentative && (
+            <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', color: '#FCD34D', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>⚠️</span> <span><strong>Projected Schedule:</strong> This is a tentative EMI schedule. The official schedule will be generated upon loan disbursal.</span>
+            </div>
+          )}
+          <h3 style={{ color: '#F1F5F9', fontWeight: 700, marginBottom: '20px', fontSize: '16px' }}>📅 {isTentative ? 'Projected ' : ''}EMI Schedule</h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
@@ -125,7 +199,7 @@ export default function LoanDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {emiSchedule.emis.map(emi => (
+                {emisToDisplay.map(emi => (
                   <tr key={emi.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <td style={{ padding: '12px', color: '#94A3B8', fontWeight: 600 }}>{emi.emiNumber}</td>
                     <td style={{ padding: '12px', color: '#CBD5E1' }}>{new Date(emi.dueDate).toLocaleDateString('en-IN')}</td>

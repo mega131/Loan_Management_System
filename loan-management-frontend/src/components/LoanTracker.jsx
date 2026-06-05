@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 const steps = [
   "SUBMITTED",
@@ -20,8 +20,8 @@ const LoanTracker = ({ loanId }) => {
     const fetchStatus = async () => {
       try {
 
-        const res = await axios.get(
-          `http://localhost:5001/api/loans/${loanId}/status`
+        const res = await api.get(
+          `/loans/${loanId}/status`
         );
 
         setCurrentStatus(res.data.status);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 import {
   LineChart,
@@ -20,8 +20,8 @@ const LoanTrendChart = () => {
     const fetchData = async () => {
       try {
 
-        const res = await axios.get(
-          "http://localhost:5001/api/dashboard/loan-trends"
+        const res = await api.get(
+          "/dashboard/loan-trends"
         );
 
         setData(res.data);
